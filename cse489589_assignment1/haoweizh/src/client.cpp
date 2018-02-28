@@ -55,6 +55,7 @@ client::client(char *port){
 
   /* Main loop */
   char buf[100];
+  bzero(&buf,sizeof(buf));
   for(;;){
     read(STD_IN,buf,100);
     buf[strlen(buf)-1]='\0';
@@ -126,6 +127,7 @@ client::client(char *port){
           char buf[100];
           for(;;){
             /* Add the listener to read set */
+            bzero(&buf,sizeof(buf));
             fd_set read_fds;
             FD_ZERO(&read_fds);
             FD_SET(STD_IN,&read_fds);
@@ -148,26 +150,67 @@ client::client(char *port){
               }
               else if (strcmp(buf,"LIST") == 0){
                   cse4589_print_and_log("[LIST:SUCCESS]\n");
+                  int i = 0;
                   for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                     if (strcmp(iter->status,"logged-in") == 0)
-                      cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",iter->list_id,iter->hostname,iter->ip_addr,iter->port_num);
+                      cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",++i,iter->hostname,iter->ip_addr,iter->port_num);
                   }
                   cse4589_print_and_log("[LIST:END]\n");
               }
               else if(strcmp(buf,"REFRESH") == 0){
+                strcat(buf," ");
+                strcat(buf,information.ip_address);
+                if(send(information.listener,buf,strlen(buf),0)<0){
+                  print_error("REFRESH");
+                }
+                cse4589_print_and_log("[REFRESH:SUCCESS]\n");
+                cse4589_print_and_log("[REFRESH:END]\n");
               }
               else if(strncmp(buf,"SEND",4) == 0){
                 if(send(information.listener,buf,strlen(buf),0)<0){
                   print_error("SEND");
                 }
+                cse4589_print_and_log("[SEND:SUCCESS]\n");
+                cse4589_print_and_log("[SEND:END]\n");
               }
               else if(strncmp(buf,"BROADCAST",9) == 0){
+                if(send(information.listener,buf,strlen(buf),0)<0){
+                  print_error("BROADCAST");
+                }
+                cse4589_print_and_log("[BROADCAST:SUCCESS]\n");
+                cse4589_print_and_log("[BROADCAST:END]\n");
               }
-              else if(strncmp(buf,"BLOCK",5) == 0){
+              else if(strncmp(buf,"BLOCK",5) == 0){/* Still need arg[1] */
+                if(send(information.listener,buf,strlen(buf),0)<0){
+                  print_error("BLOCK");
+                }
+                char *arg[2];
+                bzero(&arg[0],sizeof(arg[0]));
+                bzero(&arg[1],sizeof(arg[1]));
+                arg[0] = strtok(buf," ");
+                arg[1] = strtok(buf," ");
+                cse4589_print_and_log("[BLOCK:SUCCESS]\n");
+                information.block_list.push_back(arg[1]);
+                cse4589_print_and_log("[BLOCK:END]\n");
               }
               else if(strncmp(buf,"UNBLOCK",7) == 0){
+                if(send(information.listener,buf,strlen(buf),0)<0){
+                  print_error("UNBLOCK");
+                }
+                char *arg[2];
+                bzero(&arg[0],sizeof(arg[0]));
+                bzero(&arg[1],sizeof(arg[1]));
+                arg[0] = strtok(buf," ");
+                arg[1] = strtok(buf," ");
+                cse4589_print_and_log("[UNBLOCK:SUCCESS]\n");
+                information.block_list.remove(arg[1]);
+                cse4589_print_and_log("[UNBLOCK:END]\n");
               }
               else if(strcmp(buf,"LOGOUT") == 0){
+                cse4589_print_and_log("[LOGOUT:SUCCESS]\n");
+                close(information.listener);
+                cse4589_print_and_log("[LOGOUT:END]\n");
+                break;
               }
               else if(strcmp(buf,"EXIT") == 0){
                 close(information.listener);
@@ -175,11 +218,77 @@ client::client(char *port){
               }
             }
             else{
-              int msg[1024];
+              char msg[1024];
+              bzero(&msg,sizeof(msg));
               int recvbytes;
-              recvbytes = recv(information.listener,msg,sizeof msg,0);
+              if((recvbytes = recv(information.listener,msg,sizeof(msg),0)) <= 0){
+                cout<<"recv"<<endl;
+              }
+              
+              char *arg_zero = strtok(msg," ");
+
+              /* Process received data */
+              
               if(FD_ISSET(information.listener,&read_fds)){
                 
+                if(strcmp(arg_zero,"SEND") == 0){
+                  cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
+                  char *arg[4];
+                  bzero(&arg[0],sizeof(arg[0]));
+                  for(int j = 1;j != 4;++j){
+                    arg[j] = strtok(NULL," ");
+                  }
+                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[3],arg[2]);
+                }
+                else if(strcmp(arg_zero,"BROADCAST") == 0){
+                  cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
+                  char *arg[3];
+                  bzero(&arg[0],sizeof(arg[0]));
+                  for(int j = 1;j != 4;++j){
+                    arg[j] = strtok(NULL," ");
+                  }
+                  cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",arg[2],arg[1]);
+                }
+                else if(strcmp(arg_zero,"LOGIN") == 0){
+                  information.clients.clear();
+                  while(true){
+                    char *list_msg[3];
+                    if((list_msg[0] = strtok(NULL," ")) == NULL)
+                      break;
+                    
+                    for(int j = 1;j != 3;++j){
+                      bzero(&list_msg[j],sizeof(list_msg[j]));
+                      list_msg[j] = strtok(NULL," ");
+                    }
+                    struct socket_info si;
+                    strcpy(si.hostname,list_msg[0]);
+                    strcpy(si.ip_addr,list_msg[1]);
+                    int port_n = atoi(list_msg[2]);
+                    si.port_num = port_n;
+                    strcpy(si.status,"logged-in");
+                    information.clients.push_back(si);
+                  }
+                }
+                else if(strcmp(arg_zero,"REFRESH") == 0){
+                  information.clients.clear();
+                  while(true){
+                    char *list_msg[3];
+                    if((list_msg[0] = strtok(NULL," ")) == NULL)
+                      break;
+                    
+                    for(int j = 1;j != 3;++j){
+                      bzero(&list_msg[j],sizeof(list_msg[j]));
+                      list_msg[j] = strtok(NULL," ");
+                    }
+                    struct socket_info si;
+                    strcpy(si.hostname,list_msg[0]);
+                    strcpy(si.ip_addr,list_msg[1]);
+                    int port_n = atoi(list_msg[2]);
+                    si.port_num = port_n;
+                    strcpy(si.status,"logged-in");
+                    information.clients.push_back(si);
+                  }
+                }
               }
             }
           }

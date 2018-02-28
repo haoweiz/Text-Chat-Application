@@ -10,6 +10,7 @@ struct info{
     bzero(&port_number,sizeof(port_number));
   }
   std::list<socket_info> clients;
+  std::list<char*> block_list;
   char ip_address[1024];
   char port_number[1024];
   int listener;

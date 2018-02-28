@@ -5,6 +5,7 @@
 class server:public common{
 public:
   server(char* port);
+  bool isvalid(char *server_ip);
 };
 
 #endif

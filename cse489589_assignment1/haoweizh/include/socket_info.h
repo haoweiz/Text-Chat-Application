@@ -1,7 +1,15 @@
 #ifndef SOCKET_INFO_H
 #define SOCKET_INFO_H
 
+#include <string.h>
+#include "block.h"
+
 struct socket_info{
+  socket_info():num_msg_sent(0),num_msg_rcv(0),list_id(-1),fd(-1),port_num(-1){
+    bzero(&hostname,sizeof(hostname));
+    bzero(&ip_addr,sizeof(ip_addr));
+    bzero(&status,sizeof(status));
+  }
   int fd;
   int list_id;
   char hostname[40];
@@ -10,6 +18,7 @@ struct socket_info{
   int num_msg_sent;
   int num_msg_rcv;
   char status[16];
+  std::list<block> blocked_list;
 };
 
 #endif
