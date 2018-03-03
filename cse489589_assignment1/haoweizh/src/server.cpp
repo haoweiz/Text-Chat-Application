@@ -286,6 +286,7 @@ server::server(char* port){
               /* Find whether arg[1]:destinate ip address in from_client_ip's blocked_list */
               if(!blocked){
                 cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",from_client_ip,arg[1],arg[2]);
+                cse4589_print_and_log("[%s:END]\n", "RELAYED");
                 for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                   if(strcmp(iter->ip_addr,arg[1]) == 0){
                     if(send(iter->fd,original_msg,strlen(original_msg),0)<0){
@@ -304,7 +305,7 @@ server::server(char* port){
               char *received_ip = strtok(NULL," ");
               strcat(list_message,"REFRESH ");
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
-                if(strcmp(received_ip,iter->ip_addr) != 0 && strcmp(iter->status,"logged-in") == 0){
+                if(strcmp(iter->status,"logged-in") == 0){
                   strcat(list_message,iter->hostname);
                   strcat(list_message," ");
                   strcat(list_message,iter->ip_addr);

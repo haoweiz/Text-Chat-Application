@@ -254,6 +254,7 @@ client::client(char *port){
                     arg[j] = strtok(NULL," ");
                   }
                   cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[3],arg[2]);
+                  cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                 }
                 else if(strcmp(arg_zero,"BROADCAST") == 0){
                   cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
