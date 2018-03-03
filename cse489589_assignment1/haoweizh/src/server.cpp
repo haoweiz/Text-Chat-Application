@@ -18,6 +18,10 @@
 #define STD_IN 0
 using namespace std;
 
+bool cmp_clients(socket_info si1,socket_info si2){
+  return si1.port_num < si2.port_num;
+}
+
 bool cmp(block b1,block b2){
   return b1.listen_port_num < b2.listen_port_num;
 }
@@ -60,7 +64,7 @@ server::server(char* port){
   }
 
   /* Listen socket */
-  if (listen(information.listener, 4) < 0) {
+  if (listen(information.listener, 8) < 0) {
     cerr<<"listen";
     exit(1);
   }
@@ -106,6 +110,7 @@ server::server(char* port){
           if (strcmp(buf,"LIST")==0){
             cse4589_print_and_log("[LIST:SUCCESS]\n");
             int i = 0;
+            information.clients.sort(cmp_clients);
             for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                if (strcmp(iter->status,"logged-in") == 0)
                   cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",++i,iter->hostname,iter->ip_addr,iter->port_num);
@@ -182,9 +187,16 @@ server::server(char* port){
 
               /* Other information */
               strcpy(si.ip_addr,received_ip);
-              si.port_num = sin->sin_port;
               si.fd = newfd;
               strncpy(si.status,sts,strlen(sts));
+
+              char client_port[8];
+              bzero(&client_port,sizeof(client_port));
+              if(recv(newfd,client_port,sizeof(client_port),0) <= 0){
+                cerr<<"port"<<endl;
+              }
+              si.port_num = atoi(client_port);
+
               information.clients.push_back(si);
             }
             /* Get list information, including hostname, ip, port number. */
@@ -193,7 +205,7 @@ server::server(char* port){
             bzero(&list_message,sizeof(list_message));
             strcat(list_message,"LOGIN ");
             for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
-              if(strcmp(received_ip,iter->ip_addr) != 0 && strcmp(iter->status,"logged-in") == 0){
+              if(strcmp(iter->status,"logged-in") == 0){
                 strcat(list_message,iter->hostname);
                 strcat(list_message," ");
                 strcat(list_message,iter->ip_addr);

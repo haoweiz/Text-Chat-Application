@@ -15,6 +15,9 @@
 #define STD_IN 0
 using namespace std;
 
+bool cmp_client(socket_info si1,socket_info si2){
+  return si1.port_num < si2.port_num;
+}
 
 client::client(char *port){
   /* Save port number */
@@ -75,11 +78,13 @@ client::client(char *port){
     }
     else if (strcmp(buf,"LIST") == 0){
       cse4589_print_and_log("[LIST:SUCCESS]\n");
-        for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
-          if (strcmp(iter->status,"logged-in") == 0)
-             cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",iter->list_id,iter->hostname,iter->ip_addr,iter->port_num);
-        }
-        cse4589_print_and_log("[LIST:END]\n");
+      int i = 0;
+      information.clients.sort(cmp_client);
+      for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
+        if (strcmp(iter->status,"logged-in") == 0)
+           cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",++i,iter->hostname,iter->ip_addr,iter->port_num);
+      }
+      cse4589_print_and_log("[LIST:END]\n");
     }
     else if (strncmp(buf,"LOGIN",5) == 0){
       char *server_ip;
@@ -99,7 +104,7 @@ client::client(char *port){
         bzero(&hints, sizeof(hints));
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
-        if (/*getaddrinfo(server_ip, server_port, &hints, &result) != 0*/false) {
+        if (getaddrinfo(server_ip, server_port, &hints, &result) != 0) {
           print_error("LOGIN");
           exit(1);
         }
@@ -120,6 +125,13 @@ client::client(char *port){
           if ((connect(information.listener, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr))) < 0){
             cerr<<"connect"<<endl;
             exit(1);
+          }
+           
+          char client_port[8];
+          bzero(&client_port,sizeof(client_port));
+          strcat(client_port,information.port_number);
+          if(send(information.listener,client_port,strlen(client_port),0)<0){
+            cerr<<"port"<<endl;
           }
           cse4589_print_and_log("[LOGIN:SUCCESS]\n");
           cse4589_print_and_log("[LOGIN:END]\n");
@@ -151,6 +163,7 @@ client::client(char *port){
               else if (strcmp(buf,"LIST") == 0){
                   cse4589_print_and_log("[LIST:SUCCESS]\n");
                   int i = 0;
+                  information.clients.sort(cmp_client);
                   for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                     if (strcmp(iter->status,"logged-in") == 0)
                       cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",++i,iter->hostname,iter->ip_addr,iter->port_num);
@@ -214,6 +227,8 @@ client::client(char *port){
               }
               else if(strcmp(buf,"EXIT") == 0){
                 close(information.listener);
+                cse4589_print_and_log("[EXIT:SUCCESS]\n");
+                cse4589_print_and_log("[EXIT:END]\n");
                 exit(0);
               }
             }
