@@ -278,7 +278,7 @@ server::server(char* port){
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                 if(strcmp(iter->ip_addr,arg[1]) == 0){
                   for(list<block>::iterator block_iter = iter->blocked_list.begin();block_iter != iter->blocked_list.end();++block_iter){
-                    if(strcmp(arg[1],from_client_ip) == 0)
+                    if(strcmp(block_iter->ip,from_client_ip) == 0)
                       blocked = true;
                   }
                 }
