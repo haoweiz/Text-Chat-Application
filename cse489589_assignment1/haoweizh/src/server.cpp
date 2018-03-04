@@ -82,7 +82,7 @@ server::server(char* port){
   int addrlen;
   int newfd;
   int nbytes;
-  char buf[100];
+  char buf[1024];
   struct sockaddr_in remoteaddr;
   for(;;){
     read_fds = master; 
@@ -96,7 +96,7 @@ server::server(char* port){
       if (FD_ISSET(i, &read_fds)) {
         if (i == STD_IN){
           /* Standard input */
-          read(STD_IN,buf,100);
+          read(STD_IN,buf,1024);
           buf[strlen(buf)-1]='\0';
           if (strcmp(buf,"AUTHOR")==0){
             print_author();
@@ -118,6 +118,7 @@ server::server(char* port){
             cse4589_print_and_log("[LIST:END]\n");
           }
           if (strncmp(buf,"BLOCKED",7)==0){
+            bool valid = false;
             char *arg[2];
             arg[0] = strtok(buf," ");
             arg[1] = strtok(NULL," ");
@@ -126,10 +127,16 @@ server::server(char* port){
                 int i = 0;
                 iter->blocked_list.sort(cmp);
                 /* Have to sort iter->blocked_list */
+                cse4589_print_and_log("[BLOCKED:SUCCESS]\n");
                 for(list<block>::iterator block_iter = iter->blocked_list.begin();block_iter != iter->blocked_list.end();++block_iter){
                   cse4589_print_and_log("%-5d%-35s%-20s%-8d\n",++i,block_iter->host,block_iter->ip,block_iter->listen_port_num);
                 }
+                cse4589_print_and_log("[BLOCKED:END]\n");
+                bool valid = true;
               }
+            }
+            if(!valid){
+              print_error("BLOCKED");
             }
           }
           if (strcmp(buf,"STATISTICS")==0){
@@ -224,6 +231,7 @@ server::server(char* port){
         } 
         else {
           char msg[1024];
+          bzero(&msg,sizeof(msg));
           /* Handle data from a client */
           if ((nbytes = recv(i, msg, sizeof(msg), 0)) <= 0) {
             /* Got error or connection closed by client */
@@ -253,7 +261,6 @@ server::server(char* port){
             
 
             if(strcmp(arg_zero,"SEND") == 0){
-              cse4589_print_and_log("[%s:SUCCESS]\n", "RELAYED");
               char from_client_ip[32];
               bzero(&from_client_ip,sizeof(from_client_ip));
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
@@ -285,6 +292,7 @@ server::server(char* port){
               }
               /* Find whether arg[1]:destinate ip address in from_client_ip's blocked_list */
               if(!blocked){
+                cse4589_print_and_log("[%s:SUCCESS]\n", "RELAYED");
                 cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",from_client_ip,arg[1],arg[2]);
                 cse4589_print_and_log("[%s:END]\n", "RELAYED");
                 for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
@@ -351,8 +359,6 @@ server::server(char* port){
             }
             else if(strcmp(arg_zero,"BLOCK") == 0){
               char *arg[2];
-              bzero(&arg[0],sizeof(arg[0]));
-              bzero(&arg[1],sizeof(arg[1]));
               arg[1] = strtok(NULL," ");
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                 if(iter->fd == i){
@@ -370,8 +376,6 @@ server::server(char* port){
             }
             else if(strcmp(arg_zero,"UNBLOCK") == 0){
               char *arg[2];
-              bzero(&arg[0],sizeof(arg[0]));
-              bzero(&arg[1],sizeof(arg[1]));
               arg[1] = strtok(NULL," ");
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                 if(iter->fd == i){

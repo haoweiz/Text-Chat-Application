@@ -57,10 +57,10 @@ client::client(char *port){
   }
 
   /* Main loop */
-  char buf[100];
+  char buf[1024];
   bzero(&buf,sizeof(buf));
   for(;;){
-    read(STD_IN,buf,100);
+    read(STD_IN,buf,1024);
     buf[strlen(buf)-1]='\0';
     if (strcmp(buf,"EXIT") == 0){
       cse4589_print_and_log("[EXIT:SUCCESS]\n");
@@ -136,7 +136,7 @@ client::client(char *port){
           cse4589_print_and_log("[LOGIN:SUCCESS]\n");
           cse4589_print_and_log("[LOGIN:END]\n");
 
-          char buf[100];
+          char buf[1024];
           for(;;){
             /* Add the listener to read set */
             bzero(&buf,sizeof(buf));
@@ -148,7 +148,7 @@ client::client(char *port){
             int fd_max = information.listener;
             select(fd_max+1, &read_fds, NULL, NULL, NULL);
             if (FD_ISSET(STD_IN, &read_fds)){
-              read(STD_IN,buf,100);
+              read(STD_IN,buf,1024);
               buf[strlen(buf)-1]='\0';
 
               if (strcmp(buf,"AUTHOR") == 0){
@@ -180,8 +180,24 @@ client::client(char *port){
                 cse4589_print_and_log("[REFRESH:END]\n");
               }
               else if(strncmp(buf,"SEND",4) == 0){
-                if(send(information.listener,buf,strlen(buf),0)<0){
+                char send_message[1024];
+                bzero(&send_message,sizeof(send_message));
+                strcpy(send_message,buf);
+                char *arg[3];
+                arg[0] = strtok(buf," ");
+                for(int i = 1;i != 3;++i){
+                  arg[i] = strtok(NULL," ");
+                }
+                /* Whether in current list */
+                bool isval = false;
+                for(list<socket_info>::iterator it = information.clients.begin();it != information.clients.end();++it){
+                  if(strcmp(it->ip_addr,arg[1]) == 0) 
+                    isval = true;
+                }
+            
+                if(!isval || send(information.listener,send_message,strlen(send_message),0)<0){
                   print_error("SEND");
+                  continue;
                 }
                 cse4589_print_and_log("[SEND:SUCCESS]\n");
                 cse4589_print_and_log("[SEND:END]\n");
@@ -194,29 +210,65 @@ client::client(char *port){
                 cse4589_print_and_log("[BROADCAST:END]\n");
               }
               else if(strncmp(buf,"BLOCK",5) == 0){/* Still need arg[1] */
+                char temp_buf[1024];
+                bzero(&temp_buf,sizeof(temp_buf));
+                strcpy(temp_buf,buf);
+                strtok(temp_buf," ");
+                char *block_ip = strtok(NULL," ");
+                bool isval = false;
+                bool isblocked = false;
+                block b;
+                for(list<socket_info>::iterator it = information.clients.begin();it != information.clients.end();++it){
+                  if(strcmp(it->ip_addr,block_ip) == 0) {
+                    isval = true;
+                    b.listen_port_num = it->port_num;
+                    strcpy(b.host,it->hostname);
+                    strcpy(b.ip,it->ip_addr);
+                    break;
+                  }
+                }
+                for(list<block>::iterator block_it = information.block_list.begin();block_it != information.block_list.end();++block_it){
+                  if(strcmp(block_ip,block_it->ip) == 0){
+                    isblocked = true;
+                    break;
+                  }
+                }
+
+                if(!isval || isblocked){
+                  print_error("BLOCK");
+                  continue;
+                }
                 if(send(information.listener,buf,strlen(buf),0)<0){
                   print_error("BLOCK");
+                  continue;
                 }
-                char *arg[2];
-                bzero(&arg[0],sizeof(arg[0]));
-                bzero(&arg[1],sizeof(arg[1]));
-                arg[0] = strtok(buf," ");
-                arg[1] = strtok(buf," ");
+                else{
+                  information.block_list.push_back(b);
+                }
                 cse4589_print_and_log("[BLOCK:SUCCESS]\n");
-                information.block_list.push_back(arg[1]);
                 cse4589_print_and_log("[BLOCK:END]\n");
               }
               else if(strncmp(buf,"UNBLOCK",7) == 0){
-                if(send(information.listener,buf,strlen(buf),0)<0){
-                  print_error("UNBLOCK");
-                }
                 char *arg[2];
-                bzero(&arg[0],sizeof(arg[0]));
-                bzero(&arg[1],sizeof(arg[1]));
-                arg[0] = strtok(buf," ");
-                arg[1] = strtok(buf," ");
+                char temp_buf[1024];
+                bzero(&temp_buf,sizeof(temp_buf));
+                strcpy(temp_buf,buf);
+                arg[0] = strtok(temp_buf," ");
+                arg[1] = strtok(NULL," ");
+
+                bool valid = false;
+                for(list<block>::iterator block_it = information.block_list.begin();block_it != information.block_list.end();++block_it){
+                  if(strcmp(block_it->ip,arg[1]) == 0){
+                    information.block_list.erase(block_it);
+                    valid = true;
+                    break;
+                  }
+                }
+                if(!valid || send(information.listener,buf,strlen(buf),0)<0){
+                  print_error("UNBLOCK");
+                  continue;
+                }
                 cse4589_print_and_log("[UNBLOCK:SUCCESS]\n");
-                information.block_list.remove(arg[1]);
                 cse4589_print_and_log("[UNBLOCK:END]\n");
               }
               else if(strcmp(buf,"LOGOUT") == 0){
@@ -254,7 +306,7 @@ client::client(char *port){
                     arg[j] = strtok(NULL," ");
                   }
                   cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[3],arg[2]);
-                  cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
+                  cse4589_print_and_log("[%s:END]\n", "RECEIVED");
                 }
                 else if(strcmp(arg_zero,"BROADCAST") == 0){
                   cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
