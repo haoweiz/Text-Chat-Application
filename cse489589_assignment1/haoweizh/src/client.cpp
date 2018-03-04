@@ -58,8 +58,8 @@ client::client(char *port){
 
   /* Main loop */
   char buf[1024];
-  bzero(&buf,sizeof(buf));
   for(;;){
+    bzero(&buf,sizeof(buf));
     read(STD_IN,buf,1024);
     buf[strlen(buf)-1]='\0';
     if (strcmp(buf,"EXIT") == 0){
@@ -133,8 +133,7 @@ client::client(char *port){
           if(send(information.listener,client_port,strlen(client_port),0)<0){
             cerr<<"port"<<endl;
           }
-          cse4589_print_and_log("[LOGIN:SUCCESS]\n");
-          cse4589_print_and_log("[LOGIN:END]\n");
+
 
           char buf[1024];
           for(;;){
@@ -311,19 +310,33 @@ client::client(char *port){
                 else if(strcmp(arg_zero,"BROADCAST") == 0){
                   cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                   char *arg[3];
-                  bzero(&arg[0],sizeof(arg[0]));
-                  for(int j = 1;j != 4;++j){
+                  for(int j = 1;j != 3;++j){
                     arg[j] = strtok(NULL," ");
                   }
-                  cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",arg[2],arg[1]);
+                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[2],arg[1]);
+                  cse4589_print_and_log("[%s:END]\n", "RECEIVED");
                 }
                 else if(strcmp(arg_zero,"LOGIN") == 0){
                   information.clients.clear();
                   while(true){
                     char *list_msg[3];
-                    if((list_msg[0] = strtok(NULL," ")) == NULL)
+
+                    /* If have buffer. */
+                    while((list_msg[0] = strtok(NULL," ")) != NULL && strcmp(list_msg[0],"BUFFER") == 0){
+                      char *des_ip = strtok(NULL," ");
+                      char *mesg = strtok(NULL," ");
+                      char *fr = strtok(NULL," ");
+                      cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
+                      cse4589_print_and_log("msg from:%s\n[msg]:%s\n",fr,mesg);
+                      cse4589_print_and_log("[%s:END]\n", "RECEIVED");
+                    }
+                    if(list_msg[0] == NULL){
+                      cse4589_print_and_log("[LOGIN:SUCCESS]\n");
+                      cse4589_print_and_log("[LOGIN:END]\n");
                       break;
-                    
+                    }
+
+
                     for(int j = 1;j != 3;++j){
                       bzero(&list_msg[j],sizeof(list_msg[j]));
                       list_msg[j] = strtok(NULL," ");

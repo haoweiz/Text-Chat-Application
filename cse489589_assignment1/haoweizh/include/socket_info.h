@@ -2,7 +2,9 @@
 #define SOCKET_INFO_H
 
 #include <string.h>
+#include <queue>
 #include "block.h"
+#include "buffer_info.h"
 
 struct socket_info{
   socket_info():num_msg_sent(0),num_msg_rcv(0),list_id(-1),fd(-1),port_num(-1){
@@ -19,6 +21,7 @@ struct socket_info{
   int num_msg_rcv;
   char status[16];
   std::list<block> blocked_list;
+  std::queue<buffer_info> buffer;
 };
 
 #endif
