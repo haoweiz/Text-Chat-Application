@@ -106,13 +106,13 @@ client::client(char *port){
         hints.ai_socktype = SOCK_STREAM;
         if (getaddrinfo(server_ip, server_port, &hints, &result) != 0) {
           print_error("LOGIN");
-          exit(1);
+          continue;
         }
         else{
           /* Get socket fd */
           if ((information.listener = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-            cerr<<"socket"<<endl;
-            exit(1);
+            print_error("LOGIN");
+            continue;
           }
 
           /* Connect to server */
@@ -123,8 +123,8 @@ client::client(char *port){
           dest_addr.sin_port = htons(port);
           dest_addr.sin_addr.s_addr = inet_addr(server_ip);
           if ((connect(information.listener, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr))) < 0){
-            cerr<<"connect"<<endl;
-            exit(1);
+            print_error("LOGIN");
+            continue;
           }
            
           char client_port[8];
