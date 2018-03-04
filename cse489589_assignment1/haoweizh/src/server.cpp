@@ -142,8 +142,10 @@ server::server(char* port){
           }
           if (strcmp(buf,"STATISTICS")==0){
             cse4589_print_and_log("[STATISTICS:SUCCESS]\n");
+            int i = 0;
+            information.clients.sort(cmp_clients);
             for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter)
-              cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n",iter->list_id,iter->hostname,iter->num_msg_sent,iter->num_msg_rcv,iter->status);
+              cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n",++i,iter->hostname,iter->num_msg_sent,iter->num_msg_rcv,iter->status);
             cse4589_print_and_log("[STATISTICS:END]\n");
           }
         }
@@ -347,6 +349,7 @@ server::server(char* port){
                 for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                   if(strcmp(iter->ip_addr,arg[1]) == 0){
                     iter->buffer.push(bi);
+                    iter->num_msg_rcv++;
                   }
                 }
               }
@@ -408,6 +411,7 @@ server::server(char* port){
                   strcpy(binfo.mesg,arg[1]);
                   strcpy(binfo.fr,from_client_ip);
                   iter->buffer.push(binfo);
+                  iter->num_msg_rcv++;
                 }
               }
             }
