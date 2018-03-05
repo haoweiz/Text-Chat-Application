@@ -233,11 +233,11 @@ server::server(char* port){
                 while(!iter->buffer.empty()){
                   buffer_info binfo = iter->buffer.front();
                   strcat(list_message,"BUFFER ");
+                  strcat(list_message,binfo.fr);
+                  strcat(list_message," ");
                   strcat(list_message,binfo.des_ip);
                   strcat(list_message," ");
                   strcat(list_message,binfo.mesg);
-                  strcat(list_message," ");
-                  strcat(list_message,binfo.fr);
                   strcat(list_message," ");
                   iter->buffer.pop();
                 }
@@ -291,17 +291,19 @@ server::server(char* port){
                   iter->num_msg_sent++;
                 }
               }
-            
-
-              strcat(original_msg," ");
-              strcat(original_msg,(const char*) from_client_ip);
+              /* arg[1]:destinate,arg[2]:msg */
               char *arg[3];
-              bzero(&arg[0],sizeof(arg[0]));
-              for(int j = 1;j != 3;++j){
-                bzero(&arg[j],sizeof(arg[j]));
-                arg[j] = strtok(NULL," ");
-                if(!arg[j]) break;
-              }
+              arg[1] = strtok(NULL," ");
+              arg[2] = strtok(NULL,"");
+
+              char new_msg[1024];
+              bzero(&new_msg,sizeof(new_msg));
+              strcat(new_msg,"SEND ");
+              strcat(new_msg,(const char*) from_client_ip);
+              strcat(new_msg," ");
+              strcat(new_msg,arg[1]);
+              strcat(new_msg," ");
+              strcat(new_msg,arg[2]);
               
               bool blocked = false;
               bool log = true;
@@ -325,7 +327,7 @@ server::server(char* port){
                 cse4589_print_and_log("[%s:END]\n", "RELAYED");
                 for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                   if(strcmp(iter->ip_addr,arg[1]) == 0){
-                    if(send(iter->fd,original_msg,strlen(original_msg),0)<0){
+                    if(send(iter->fd,new_msg,strlen(new_msg),0)<0){
                       cerr<<"send"<<endl;
                     }
                     iter->num_msg_rcv++;
@@ -388,19 +390,22 @@ server::server(char* port){
               }
 
               char *arg[2];
-              bzero(&arg[0],sizeof(arg[0]));
-              bzero(&arg[1],sizeof(arg[1]));
-              arg[1] = strtok(NULL," ");
+              arg[1] = strtok(NULL,"");
 
-              strcat(original_msg," ");
-              strcat(original_msg,from_client_ip);
+              char new_msg[1024];
+              bzero(&new_msg,sizeof(new_msg));
+              strcat(new_msg,"BROADCAST ");
+              strcat(new_msg,from_client_ip);
+              strcat(new_msg," ");
+              strcat(new_msg,arg[1]);
+
               /* Find all blocked ip address in from_client_ip's blocked_list */
               /* Undo. */
               cse4589_print_and_log("msg from:%s, to:255.255.255.255\n[msg]:%s\n",from_client_ip,arg[1]);
               cse4589_print_and_log("[%s:END]\n", "RELAYED");
               for(list<socket_info>::iterator iter = information.clients.begin();iter != information.clients.end();++iter){
                 if(iter->fd != i && strcmp(iter->status,"logged-in") == 0){
-                  if(send(iter->fd,original_msg,strlen(original_msg),0)<0){
+                  if(send(iter->fd,new_msg,strlen(new_msg),0)<0){
                     print_error("BROADCAST");
                   }
                   iter->num_msg_rcv++;

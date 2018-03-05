@@ -300,20 +300,18 @@ client::client(char *port){
                 if(strcmp(arg_zero,"SEND") == 0){
                   cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                   char *arg[4];
-                  bzero(&arg[0],sizeof(arg[0]));
-                  for(int j = 1;j != 4;++j){
-                    arg[j] = strtok(NULL," ");
-                  }
-                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[3],arg[2]);
+                  arg[1] = strtok(NULL," ");
+                  arg[2] = strtok(NULL," ");
+                  arg[3] = strtok(NULL,"");
+                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[1],arg[3]);
                   cse4589_print_and_log("[%s:END]\n", "RECEIVED");
                 }
                 else if(strcmp(arg_zero,"BROADCAST") == 0){
                   cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                   char *arg[3];
-                  for(int j = 1;j != 3;++j){
-                    arg[j] = strtok(NULL," ");
-                  }
-                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[2],arg[1]);
+                  arg[1] = strtok(NULL," ");
+                  arg[2] = strtok(NULL,"");
+                  cse4589_print_and_log("msg from:%s\n[msg]:%s\n",arg[1],arg[2]);
                   cse4589_print_and_log("[%s:END]\n", "RECEIVED");
                 }
                 else if(strcmp(arg_zero,"LOGIN") == 0){
@@ -323,9 +321,9 @@ client::client(char *port){
 
                     /* If have buffer. */
                     while((list_msg[0] = strtok(NULL," ")) != NULL && strcmp(list_msg[0],"BUFFER") == 0){
+                      char *fr = strtok(NULL," ");
                       char *des_ip = strtok(NULL," ");
                       char *mesg = strtok(NULL," ");
-                      char *fr = strtok(NULL," ");
                       cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                       cse4589_print_and_log("msg from:%s\n[msg]:%s\n",fr,mesg);
                       cse4589_print_and_log("[%s:END]\n", "RECEIVED");
