@@ -119,6 +119,19 @@ client::client(char *port){
           struct sockaddr_in dest_addr; 
           bzero(&dest_addr,sizeof(dest_addr));
           dest_addr.sin_family = AF_INET;
+
+          bool valid_port = true;
+          for(int i = 0;i != strlen(server_port);++i){
+            if(server_port[i] >= '0' && server_port[i] <= '9'){
+              continue;
+            }
+            else{
+              print_error("LOGIN");
+              valid_port = false;
+              break;
+            }
+          }
+          if(!valid_port) continue;
           int port = atoi(server_port);
           dest_addr.sin_port = htons(port);
           dest_addr.sin_addr.s_addr = inet_addr(server_ip);
