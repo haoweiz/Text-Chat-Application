@@ -93,10 +93,33 @@ client::client(char *port){
       server_ip = strtok(NULL," ");
       server_port = strtok(NULL," ");
       
-      /* Invalid ip address */
-      if (!isvalid(server_ip)){
+
+      bool valid_port = true;
+      if(server_port == NULL){
         print_error("LOGIN");
-        exit(1);
+        continue;
+      }   
+      for(int i = 0;i != strlen(server_port);++i){
+        if(server_port[i] >= '0' && server_port[i] <= '9'){
+          continue;
+        }
+        else{
+          print_error("LOGIN");
+          valid_port = false;
+          break;
+        }
+      }
+      if(!valid_port) continue;
+      int port = atoi(server_port);
+      if(port < 0 || port > 65535){
+        print_error("LOGIN");
+        continue;
+      }
+
+      /* Invalid ip address */
+      if (!isvalid(server_ip,port)){
+        print_error("LOGIN");
+        continue;
       }
       else{
         struct addrinfo hints;
@@ -119,20 +142,6 @@ client::client(char *port){
           struct sockaddr_in dest_addr; 
           bzero(&dest_addr,sizeof(dest_addr));
           dest_addr.sin_family = AF_INET;
-
-          bool valid_port = true;
-          for(int i = 0;i != strlen(server_port);++i){
-            if(server_port[i] >= '0' && server_port[i] <= '9'){
-              continue;
-            }
-            else{
-              print_error("LOGIN");
-              valid_port = false;
-              break;
-            }
-          }
-          if(!valid_port) continue;
-          int port = atoi(server_port);
           dest_addr.sin_port = htons(port);
           dest_addr.sin_addr.s_addr = inet_addr(server_ip);
           if ((connect(information.listener, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr))) < 0){
@@ -391,9 +400,11 @@ client::client(char *port){
 }
 
 
-bool client::isvalid(char *server_ip){
-
-
-
+bool client::isvalid(char *server_ip,int p){
+  struct sockaddr_in ip4addr;
+  ip4addr.sin_family = AF_INET;
+  ip4addr.sin_port = htons(p);
+  if(inet_pton(AF_INET,server_ip,&ip4addr.sin_addr) != 1)
+    return false;
   return true;
 }
