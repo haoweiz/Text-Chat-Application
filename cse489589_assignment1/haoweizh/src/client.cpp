@@ -342,13 +342,35 @@ client::client(char *port){
                     char *list_msg[3];
 
                     /* If have buffer. */
-                    while((list_msg[0] = strtok(NULL," ")) != NULL && strcmp(list_msg[0],"BUFFER") == 0){
-                      char *fr = strtok(NULL," ");
-                      char *des_ip = strtok(NULL," ");
-                      char *mesg = strtok(NULL," ");
+                    list_msg[0] = strtok(NULL," ");
+                    char mesg[512];
+                    char messag[4096];
+                    bzero(&messag,sizeof(messag));
+                    while(list_msg[0] != NULL && strcmp(list_msg[0],"BUFFER") == 0){
+                      char original_messag[4096];
+                      bzero(&original_messag,sizeof(original_messag));
+                      strcpy(messag,strtok(NULL,""));
+                      strcpy(original_messag,messag);
+
+                      char *fr = strtok(original_messag," ");
+                      char *l = strtok(NULL," ");
+
+                      int length = atoi(l);
+                      char *next;
+                      next = strtok(NULL,"");
+                      bzero(&mesg,sizeof(mesg));
+                      strncpy(mesg,next,length);
                       cse4589_print_and_log("[%s:SUCCESS]\n", "RECEIVED");
                       cse4589_print_and_log("msg from:%s\n[msg]:%s\n",fr,mesg);
                       cse4589_print_and_log("[%s:END]\n", "RECEIVED");
+
+                      list_msg[0] = strtok(messag," ");
+                      if(strcmp(list_msg[0],"BUFFER") == 0 || list_msg[0] == NULL) {
+                        continue;
+                      }
+
+                      while((list_msg[0] = strtok(NULL," ")) != NULL && strcmp(list_msg[0],"BUFFER") != 0)
+                        continue;
                     }
                     if(list_msg[0] == NULL){
                       cse4589_print_and_log("[LOGIN:SUCCESS]\n");

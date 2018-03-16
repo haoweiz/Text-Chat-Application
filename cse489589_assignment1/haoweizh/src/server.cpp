@@ -235,11 +235,20 @@ server::server(char* port){
                   strcat(list_message,"BUFFER ");
                   strcat(list_message,binfo.fr);
                   strcat(list_message," ");
-                  strcat(list_message,binfo.des_ip);
+
+                  char l[5];
+                  bzero(&l,sizeof(l));
+                  int length = strlen(binfo.mesg);
+                  sprintf(l,"%d",length);
+                  strcat(list_message,l);
                   strcat(list_message," ");
+
                   strcat(list_message,binfo.mesg);
                   strcat(list_message," ");
                   iter->buffer.pop();
+                  cse4589_print_and_log("[%s:SUCCESS]\n", "RELAYED");
+                  cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",binfo.fr,binfo.des_ip,binfo.mesg);
+                  cse4589_print_and_log("[%s:END]\n", "RELAYED");
                 }
               }
             }
@@ -338,9 +347,9 @@ server::server(char* port){
               }
               /* If destinate_ip is logged out, buffer it. */
               if(!log && !blocked){
-                cse4589_print_and_log("[%s:SUCCESS]\n", "RELAYED");
-                cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",from_client_ip,arg[1],arg[2]);
-                cse4589_print_and_log("[%s:END]\n", "RELAYED");
+                //cse4589_print_and_log("[%s:SUCCESS]\n", "RELAYED");
+                //cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n",from_client_ip,arg[1],arg[2]);
+                //cse4589_print_and_log("[%s:END]\n", "RELAYED");
 
                 buffer_info bi;
                 /* Buffered msg "Buffer"+des_ip+msg+from_ip. */
